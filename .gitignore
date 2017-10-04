@@ -8,3 +8,9 @@ node_modules/
 telehash.c
 telehash.h
 /TAGS
+CMakeFiles
+CmakeCache.txt
+Makefile
+cmake_install.cmake
+.idea
+*.cbp
