@@ -1,3 +1,5 @@
+# Note: Only used for CLion, use standard Makefile for building
+
 add_definitions(
     -D_GNU_SOURCE
 )
