@@ -59,10 +59,11 @@ static: libtelehash
 static-cs1c:
 	@echo "#include <telehash.h>" > telehash.c
 	@cat $(LIB) $(E3X) $(MESH) $(EXT) $(UTIL) src/e3x/cs1c/cs1c.c src/e3x/cs3a_disabled.c >> telehash.c
-	@sed -i '' "/#include \".*h\"/d" telehash.c
+	@sed -i.bak "/#include \".*h\"/d" telehash.c
 	@cat include/lob.h include/xht.h include/e3x_cipher.h include/e3x_self.h include/e3x_exchange.h include/hashname.h include/mesh.h include/link.h include/chan.h include/util_chunks.h include/util_frames.h include/*.h > telehash.h
 	@sed -i.bak "/#include \".*h\"/d" telehash.h
 	@rm -f telehash.h.bak
+	@rm -f telehash.c.bak
 
 static-throwback:
 	@echo "#include <telehash.h>" > telehash.c
