@@ -155,7 +155,7 @@ chan_t chan_receive(chan_t c, lob_t inner)
       LOG("TODO miss handling");
       lob_free(miss);
     }
-
+    lob_free(inner);
   }
 
   return c;
