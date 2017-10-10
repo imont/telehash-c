@@ -197,6 +197,7 @@ net_tcp4_t net_tcp4_new(mesh_t mesh, lob_t options)
     return LOG("listen failed %s",strerror(errno));
   }
   setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const void *)&opt , sizeof(int));
+  setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (const void *)&opt , sizeof(int));
   fcntl(sock, F_SETFL, O_NONBLOCK);
 
   if(!(net = malloc(sizeof (struct net_tcp4_struct))))
