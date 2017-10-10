@@ -116,6 +116,9 @@ router: $(ROUTER_OBJFILES)
 #port:
 #	$(CC) $(CFLAGS) -o bin/port util/port.c src/*.c unix/util.c src/ext/*.c $(ARCH)
 
+app:
+	$(CC) $(INCLUDE) $(CFLAGS) -o bin/app util/app.c $(FULL_OBJFILES) $(LDFLAGS)
+
 clean:
 	rm -rf bin/*
 	rm -f arduino/src/telehash/*.h
