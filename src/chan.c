@@ -155,7 +155,6 @@ chan_t chan_receive(chan_t c, lob_t inner)
       LOG("TODO miss handling");
       lob_free(miss);
     }
-    lob_free(inner);
   }
 
   return c;
@@ -338,7 +337,9 @@ chan_t chan_process(chan_t c, uint32_t now)
     if(!ret->id) continue;
     if(ret->id == now) continue;
     // max once per second throttle resend
-    ret->id = now;
+    // Copy this packet since chan_send free's and shit happens
+    lob_t copy = lob_copy(ret);
+    copy->id = now;
     chan_send(c,ret);
   }
   
