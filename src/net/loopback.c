@@ -6,8 +6,10 @@ void pair_send(pipe_t pipe, lob_t packet, link_t link)
   net_loopback_t pair = (net_loopback_t)pipe->arg;
   if(!pair || !packet || !link) return;
   LOG("pair pipe from %s",hashname_short(link->id));
-  if(link->mesh == pair->a) mesh_receive(pair->b,packet,pipe);
-  else if(link->mesh == pair->b) mesh_receive(pair->a,packet,pipe);
+  // Copy the packet as if it arrived from somewhere, otherwise massive segfaults all over the place
+  lob_t copy = lob_copy(packet);
+  if(link->mesh == pair->a) mesh_receive(pair->b,copy,pipe);
+  else if(link->mesh == pair->b) mesh_receive(pair->a,copy,pipe);
   else lob_free(packet);
 }
 
@@ -39,5 +41,4 @@ void net_loopback_free(net_loopback_t pair)
 {
   pipe_free(pair->pipe);
   free(pair);
-  return;
 }
