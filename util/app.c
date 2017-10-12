@@ -40,6 +40,8 @@ void imont_stream_chan_handler(chan_t chan, void *arg) {
             printf("Replying with: %s\n", reply);
             stream_send(chan, (uint8_t *) reply, strlen(reply));
             free(reply);
+        } else {
+            chan_process(chan, 0);
         }
         lob_free(packet);
     }
@@ -188,9 +190,8 @@ void test_loopback(mesh_t meshA, mesh_t meshB) {
         lob_t rcv;
         while ((rcv = chan_receiving(stream))) {
             printf("Received reply with id %d\n", rcv->id);
+            lob_free(rcv);
         }
-        chan_process(stream, 0);
     }
-    // TODO This causes havoc and segfaults
-    //net_loopback_free(loop);
+    net_loopback_free(loop);
 }
