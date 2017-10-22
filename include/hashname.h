@@ -4,6 +4,12 @@
 #include "base32.h"
 #include "lob.h"
 
+#ifdef TH_USE_TMP_THREADLOCAL
+#define TMP_THREADLOCAL __thread
+#else
+#define TMP_THREADLOCAL
+#endif
+
 // overall type
 typedef struct hashname_struct
 {

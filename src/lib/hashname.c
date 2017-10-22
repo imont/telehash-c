@@ -10,7 +10,7 @@
 #define MAX_CSIDS 8
 
 // v* methods return this
-static struct hashname_struct hn_vtmp;
+static TMP_THREADLOCAL struct hashname_struct hn_vtmp;
 
 hashname_t hashname_dup(hashname_t id)
 {
@@ -108,7 +108,7 @@ uint8_t *hashname_bin(hashname_t hn)
 }
 
 // 52 byte base32 string w/ \0 (TEMPORARY)
-static char hn_ctmp[53];
+static TMP_THREADLOCAL char hn_ctmp[53];
 char *hashname_char(hashname_t hn)
 {
   if(!hn) return NULL;
