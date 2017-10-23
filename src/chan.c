@@ -340,7 +340,7 @@ chan_t chan_process(chan_t c, uint32_t now)
     // Copy this packet since chan_send free's and shit happens
     lob_t copy = lob_copy(ret);
     copy->id = now;
-    chan_send(c,ret);
+    chan_send(c,copy);
   }
   
   if(c->ack || c->acked) LOG("sending ack %d acked %d",c->ack,c->acked);
