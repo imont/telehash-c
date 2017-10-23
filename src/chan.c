@@ -22,7 +22,7 @@ chan_t chan_new(lob_t open)
   c->state = CHAN_OPENING;
   c->id = id;
   c->open = lob_copy(open);
-  c->type = lob_get(open,"type");
+  c->type = strdup(lob_get(open,"type"));
   c->capacity = 1024*1024; // 1MB total default
 
   // reliability
