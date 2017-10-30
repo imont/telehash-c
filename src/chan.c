@@ -4,6 +4,8 @@
 #include <inttypes.h>
 #include "telehash.h"
 
+static void chan_process_ack(chan_t c, lob_t inner, uint32_t ack); // process an ack packet
+
 // open must be chan_receive or chan_send next yet
 chan_t chan_new(lob_t open)
 {
@@ -119,6 +121,10 @@ chan_t chan_receive(chan_t c, lob_t inner)
     if(inner->id <= c->acked)
     {
       LOG("dropping old seq %d",inner->id);
+      if((ack = lob_get_uint(inner, "ack")))
+      {
+        chan_process_ack(c, inner, ack);
+      }
       lob_free(inner);
       return NULL;
     }
@@ -139,25 +145,30 @@ chan_t chan_receive(chan_t c, lob_t inner)
   // remove any from sent cache that have been ack'd
   if((ack = lob_get_uint(inner, "ack")))
   {
-    prev = c->sent;
-    while(prev && prev->id <= ack)
-    {
-      c->sent = lob_splice(c->sent, prev);
-      lob_free(prev); // TODO, notify app this packet was ack'd
-      prev = c->sent;
-    }
-
-    // process array, update list of packets that are missed or not
-    if((miss = lob_get_json(inner, "miss")))
-    {
-      // set resend flag timestamp on them
-      // update window
-      LOG("TODO miss handling");
-      lob_free(miss);
-    }
+    chan_process_ack(c, inner, ack);
   }
 
   return c;
+}
+
+static void chan_process_ack(chan_t c, lob_t inner, uint32_t ack) {
+  lob_t prev, miss;
+  prev = c->sent;
+  while(prev && prev->id <= ack)
+  {
+    c->sent = lob_splice(c->sent, prev);
+    lob_free(prev); // TODO, notify app this packet was ack'd
+    prev = c->sent;
+  }
+
+  // process array, update list of packets that are missed or not
+  if((miss = lob_get_json(inner, "miss")))
+  {
+    // set resend flag timestamp on them
+    // update window
+    LOG("TODO miss handling");
+    lob_free(miss);
+  }
 }
 
 // false to force start timers (any new handshake), true to cancel and resend last packet (after any e3x_sync)
