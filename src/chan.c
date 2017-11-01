@@ -24,7 +24,7 @@ chan_t chan_new(lob_t open)
   c->state = CHAN_OPENING;
   c->id = id;
   c->open = lob_copy(open);
-  c->type = strdup(lob_get(open,"type"));
+  c->type = strdup(type);
   c->capacity = 1024*1024; // 1MB total default
 
   // reliability
@@ -53,6 +53,7 @@ chan_t chan_free(chan_t c)
   // free any other queued packets
   lob_freeall(c->in);
   lob_freeall(c->sent);
+  free(c->type);
   free(c);
   return NULL;
 }
