@@ -117,6 +117,7 @@ chan_t chan_receive(chan_t c, lob_t inner)
   inner->id = lob_get_uint(inner, "seq");
 
   // if there's an id, it's content
+  uint8_t inserted = 0;
   if(inner->id)
   {
     if(inner->id <= c->acked)
@@ -140,6 +141,7 @@ chan_t chan_receive(chan_t c, lob_t inner)
       return NULL;
     }
     c->in = lob_insert(c->in, prev, inner);
+    inserted = 1;
 //    LOG("inserted seq %d",c->in?c->in->id:-1);
   }
 
@@ -147,6 +149,10 @@ chan_t chan_receive(chan_t c, lob_t inner)
   if((ack = lob_get_uint(inner, "ack")))
   {
     chan_process_ack(c, inner, ack);
+    if (!inserted)
+    {
+      lob_free(inner); // has not been used, get rid of
+    }
   }
 
   return c;
@@ -349,10 +355,8 @@ chan_t chan_process(chan_t c, uint32_t now)
     if(!ret->id) continue;
     if(ret->id == now) continue;
     // max once per second throttle resend
-    // Copy this packet since chan_send free's and shit happens
-    lob_t copy = lob_copy(ret);
-    copy->id = now;
-    chan_send(c,copy);
+    ret->id = now;
+    chan_send(c,ret);
   }
   
   if(c->ack || c->acked) LOG("sending ack %d acked %d",c->ack,c->acked);
