@@ -101,7 +101,7 @@ enum chan_states chan_state(chan_t c)
 // process into receiving queue
 chan_t chan_receive(chan_t c, lob_t inner)
 {
-  lob_t prev, miss;
+  lob_t prev;
   uint32_t ack;
 
   if(!c || !inner) return LOG("bad args");
