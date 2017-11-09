@@ -52,7 +52,7 @@ chan_t chan_free(chan_t c)
   lob_free(c->open);
   // free any other queued packets
   lob_freeall(c->in);
-  lob_freeall(c->sent);
+  //lob_freeall(c->sent);
   free(c->type);
   free(c);
   return NULL;
@@ -159,23 +159,24 @@ chan_t chan_receive(chan_t c, lob_t inner)
 }
 
 static void chan_process_ack(chan_t c, lob_t inner, uint32_t ack) {
-  lob_t prev, miss;
-  prev = c->sent;
-  while(prev && prev->id <= ack)
-  {
-    c->sent = lob_splice(c->sent, prev);
-    lob_free(prev); // TODO, notify app this packet was ack'd
-    prev = c->sent;
-  }
-
-  // process array, update list of packets that are missed or not
-  if((miss = lob_get_json(inner, "miss")))
-  {
-    // set resend flag timestamp on them
-    // update window
-    LOG("TODO miss handling");
-    lob_free(miss);
-  }
+// ignore acks
+//  lob_t prev, miss;
+//  prev = c->sent;
+//  while(prev && prev->id <= ack)
+//  {
+//    c->sent = lob_splice(c->sent, prev);
+//    lob_free(prev); // TODO, notify app this packet was ack'd
+//    prev = c->sent;
+//  }
+//
+//  // process array, update list of packets that are missed or not
+//  if((miss = lob_get_json(inner, "miss")))
+//  {
+//    // set resend flag timestamp on them
+//    // update window
+//    LOG("TODO miss handling");
+//    lob_free(miss);
+//  }
 }
 
 // false to force start timers (any new handshake), true to cancel and resend last packet (after any e3x_sync)
@@ -302,9 +303,10 @@ chan_t chan_send(chan_t c, lob_t inner)
 
   link_send(c->link, e3x_exchange_send(c->link->x, inner));
 
-  // if it's a content packet and reliable, add to sent list (push is dup safe since inner may be on it already)
-  if(c->seq && inner->id) c->sent = lob_push(c->sent, inner);
-  else lob_free(inner);
+  // BROKEN: if it's a content packet and reliable, add to sent list (push is dup safe since inner may be on it already)
+//  if(c->seq && inner->id) c->sent = lob_push(c->sent, inner);
+//  else lob_free(inner);
+  lob_free(inner);
 
   return c;
 }
@@ -325,7 +327,6 @@ chan_t chan_err(chan_t c, char *msg)
 // must be called after every send or receive, processes resends/timeouts, fires handlers
 chan_t chan_process(chan_t c, uint32_t now)
 {
-  lob_t ret;
   if(!c) return NULL;
 
   // do timeout checks
@@ -349,15 +350,16 @@ chan_t chan_process(chan_t c, uint32_t now)
   // fire receiving handlers
   if(c->in && c->handle) c->handle(c, c->arg);
 
-  // check sent list for any flagged to resend
-  for(ret = c->sent; ret; ret = ret->next)
-  {
-    if(!ret->id) continue;
-    if(ret->id == now) continue;
-    // max once per second throttle resend
-    ret->id = now;
-    chan_send(c,ret);
-  }
+  // BROKEN
+//  // check sent list for any flagged to resend
+//  for(ret = c->sent; ret; ret = ret->next)
+//  {
+//    if(!ret->id) continue;
+//    if(ret->id == now) continue;
+//    // max once per second throttle resend
+//    ret->id = now;
+//    chan_send(c,ret);
+//  }
   
   if(c->ack || c->acked) LOG("sending ack %d acked %d",c->ack,c->acked);
 
@@ -390,12 +392,13 @@ uint32_t chan_size(chan_t c, uint32_t max)
     size += lob_len(cur);
     cur = cur->next;
   }
-  cur = c->sent;
-  while(cur)
-  {
-    size += lob_len(cur);
-    cur = cur->next;
-  }
+// BROKEN
+//  cur = c->sent;
+//  while(cur)
+//  {
+//    size += lob_len(cur);
+//    cur = cur->next;
+//  }
 
   return size;
 }

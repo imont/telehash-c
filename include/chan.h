@@ -19,10 +19,11 @@ struct chan_struct
   // timer stuff
   uint32_t tsent, trecv; // last send, recv at
   uint32_t timeout; // when in the future to trigger timeout
-  
-  // reliable tracking
-  lob_t sent;
+
+  // received but unprocessed packets
   lob_t in;
+
+  // reliable tracking
   uint32_t seq, ack, acked, window;
   
   // direct handler
