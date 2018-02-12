@@ -1,7 +1,6 @@
 #include "telehash.h"
 #include <string.h>
 #include <stdlib.h>
-#include <time.h>
 #include "telehash.h"
 #include "telehash.h"
 
@@ -379,7 +378,7 @@ link_t link_receive(link_t link, lob_t inner, pipe_t pipe)
     // consume inner
     chan_receive(c, inner);
     // process any changes
-    chan_process(c, (uint32_t) time(NULL));
+    chan_process(c, util_sys_seconds());
     return link;
   }
 
@@ -559,7 +558,7 @@ link_t link_down(link_t link)
   {
     cnext = chan_next(c);
     chan_err(c, "disconnected");
-    chan_process(c, (uint32_t) time(NULL));
+    chan_process(c, util_sys_seconds());
   }
 
   return link;
