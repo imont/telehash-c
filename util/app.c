@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include "telehash.h"
 #include "net_tcp4.h"
+#include "net_udp4.h"
 #include "net_loopback.h"
 
 chan_t stream_send(chan_t chan, uint8_t * data, size_t size);
@@ -22,6 +23,8 @@ static char * reply_prefix = "REPLY: ";
 static int loopback = 0;
 static int static_keys = 0;
 static int init_connection = 0;
+static int listen_udp = 0;
+static unsigned int packet_loss_percent = 0;
 
 void imont_stream_chan_handler(chan_t chan, void *arg) {
     lob_t packet;
@@ -86,7 +89,11 @@ chan_t stream_send(chan_t chan, uint8_t * data, size_t size) {
 mesh_t load_static();
 
 int main(int argc, char ** argv) {
-    util_sys_logging(0);
+    if (getenv("DEBUG")) {
+        util_sys_logging(1);
+    } else {
+        util_sys_logging(0);
+    }
     setbuf(stdout, NULL);
     printf("Telehash-c Test App\n");
     parse_args(argc, argv);
@@ -136,6 +143,14 @@ int main(int argc, char ** argv) {
         link_sync(remote_link);
         while(net_tcp4_loop(net));
         net_tcp4_free(net);
+    } else if (listen_udp) {
+        printf("Configured packet loss: %d%%\n", packet_loss_percent);
+        lob_t options = lob_new();
+        lob_set_uint(options, "pkt_loss", packet_loss_percent);
+        net_udp4_t net = net_udp4_new(mesh, options);
+        printf("Listening on UDP port: %d\n", net->port);
+        while(net_udp4_receive(net));
+        net_udp4_free(net);
     } else {
         net_tcp4_t net = net_tcp4_new(mesh, NULL);
         printf("Listening on port: %d\n", net->port);
@@ -168,6 +183,12 @@ void parse_args(int argc, char** argv) {
         }
         if (strcmp(argv[i], "loopback") == 0) {
             loopback = 1;
+        }
+        if (strcmp(argv[i], "udp") == 0) {
+            listen_udp = 1;
+            if (argc > i) {
+                packet_loss_percent = (unsigned int) atoi(argv[i + 1]);
+            }
         }
         if (strcmp(argv[i], "connect") == 0) {
             init_connection = 1;
