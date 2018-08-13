@@ -8,6 +8,7 @@
 #include "unit_test.h"
 
 static void test_random_delivery(chan_t chan);
+static void test_process_acks(chan_t chan);
 
 static long rand_in_range(const int start, const int end) {
     return start + util_sys_random() / (RAND_MAX / (end - start + 1) + 1);
@@ -53,7 +54,9 @@ int main(int argc, char **argv)
     fail_unless(chan->in->next->next->id == 3);
     fail_unless(chan->in->next->next->next->id == 4);
 
-    while (chan_receiving(chan)); // clear channel
+    while ((pkt = chan_receiving(chan))) {
+        lob_free(pkt);
+    }
     fail_unless(!chan->in);
 
     pkt = lob_new();
@@ -70,8 +73,10 @@ int main(int argc, char **argv)
     chan_receive(chan, pkt);
     fail_unless(chan->in->id == 5);
     fail_unless(chan->in->next->id == 6);
-    fail_unless(chan_receiving(chan)->id == 5);
-    fail_unless(chan_receiving(chan)->id == 6);
+    fail_unless((pkt = chan_receiving(chan))->id == 5);
+    lob_free(pkt);
+    fail_unless((pkt = chan_receiving(chan))->id == 6);
+    lob_free(pkt);
 
     // ensure we prepend to beginning of c->in
     pkt = lob_new();
@@ -95,7 +100,9 @@ int main(int argc, char **argv)
     fail_unless(!chan_receiving(chan));
 
     test_random_delivery(chan);
+    test_process_acks(chan);
 
+    chan_free(chan);
 }
 
 static void test_random_delivery(chan_t chan) {
@@ -116,4 +123,26 @@ static void test_random_delivery(chan_t chan) {
         fail_unless(curr->id > prev_id);
         fail_unless(curr->id < next_id);
     } while((curr = lob_next(curr)));
+}
+
+static void test_process_acks(chan_t chan) {
+    // generate a bunch of sent packets
+    lob_t pkt, curr;
+    util_sys_random_init();
+    for (int x = 0; x < 100; x++) {
+        pkt = lob_new();
+        pkt->id = x;
+        lob_set_int(pkt, "c", 1);
+        lob_set_int(pkt, "seq", x);
+        chan->sent = lob_push(chan->sent, pkt);
+    }
+    fail_unless(chan->sent);
+
+    for (int x = 0; x < 100; x++) {
+        pkt = lob_new();
+        lob_set_int(pkt, "c", 1);
+        lob_set_int(pkt, "ack", x);
+        chan_receive(chan, pkt);
+    }
+    fail_unless(!chan->sent);
 }

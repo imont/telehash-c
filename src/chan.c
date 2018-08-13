@@ -99,6 +99,7 @@ enum chan_states chan_state(chan_t c)
 // process into receiving queue
 chan_t chan_receive(chan_t c, lob_t inner)
 {
+  uint8_t used = 0;
   lob_t prev, miss;
   uint32_t ack;
 
@@ -160,6 +161,7 @@ chan_t chan_receive(chan_t c, lob_t inner)
     uint32_t before = inner->prev ? inner->prev->id : 0;
     uint32_t after = inner->next ? inner->next->id : 0;
     LOG("inserted seq (%d <-> [%d] <-> %d)", before, inner->id, after);
+    used = 1;
   }
 
   // remove any from sent cache that have been ack'd
@@ -169,6 +171,7 @@ chan_t chan_receive(chan_t c, lob_t inner)
     while(prev && prev->id <= ack)
     {
       c->sent = lob_splice(c->sent, prev);
+      LOG("remove ack'd seq %d", prev->id);
       lob_free(prev); // TODO, notify app this packet was ack'd
       prev = c->sent;
     }
@@ -181,7 +184,11 @@ chan_t chan_receive(chan_t c, lob_t inner)
       LOG("TODO miss handling");
       lob_free(miss);
     }
+  }
 
+  // free inner if we didn't use it for anything in the end
+  if (!used) {
+    lob_free(inner);
   }
 
   return c;
