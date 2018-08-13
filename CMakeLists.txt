@@ -41,6 +41,8 @@ add_library(telehash_bl ${LIB_SOURCES} ${E3X_SOURCES} ${MESH_SOURCES} ${UTIL_SOU
 add_library(tests ${TEST_SOURCES})
 add_executable(test_app util/app.c src/net/tcp4.c src/net/loopback.c src/net/udp4.c)
 add_executable(loopback_test test/net_loopback.c src/net/loopback.c)
+add_executable(chan_reliability_test test/chan_reliability.c)
 target_link_libraries(test_app telehash)
 target_link_libraries(loopback_test telehash)
+target_link_libraries(chan_reliability_test telehash)
 target_compile_definitions(telehash_bl PUBLIC NOLOG=true)

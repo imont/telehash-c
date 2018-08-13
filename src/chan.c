@@ -126,7 +126,30 @@ chan_t chan_receive(chan_t c, lob_t inner)
 
     // insert it sorted
     prev = c->in;
-    while(prev && prev->id > inner->id) prev = prev->next;
+    do {
+      if (!prev) {
+        break;
+      }
+      if (prev->id == inner->id) {
+        // packet with same id = duplicate in list
+        break;
+      }
+      if (prev->id < inner->id) {
+        if (prev->next) {
+          if (prev->next->id > inner->id) {
+            // between two packets, one smaller and one larger than this
+            break;
+          }
+        } else {
+          // Smaller packet exists, larger does not
+          break;
+        }
+      }
+    } while ((prev = lob_next(prev)) && prev->id <= inner->id);
+    if (prev && prev->id > inner->id) {
+      // no previous packet
+      prev = NULL;
+    }
     if(prev && prev->id == inner->id)
     {
       LOG("dropping dup seq %d",inner->id);
@@ -134,7 +157,9 @@ chan_t chan_receive(chan_t c, lob_t inner)
       return NULL;
     }
     c->in = lob_insert(c->in, prev, inner);
-//    LOG("inserted seq %d",c->in?c->in->id:-1);
+    uint32_t before = inner->prev ? inner->prev->id : 0;
+    uint32_t after = inner->next ? inner->next->id : 0;
+    LOG("inserted seq (%d <-> [%d] <-> %d)", before, inner->id, after);
   }
 
   // remove any from sent cache that have been ack'd
@@ -343,7 +368,7 @@ chan_t chan_process(chan_t c, uint32_t now)
 //    chan_send(c,ret);
 //  }
   
-  if(c->ack || c->acked) LOG("sending ack %d acked %d",c->ack,c->acked);
+  if(c->ack || c->acked) LOG("sending ack %d, acked %d, in %d",c->ack,c->acked, (c->in ? c->in->id : 0));
 
   // if we need to generate an ack/miss yet, do that
   if(c->ack != c->acked) chan_send(c,chan_oob(c));
