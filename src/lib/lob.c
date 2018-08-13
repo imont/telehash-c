@@ -712,7 +712,9 @@ lob_t lob_insert(lob_t list, lob_t after, lob_t p)
   if(!p) return list;
   list = lob_splice(list, p);
   if(!list) return p;
-  if(!after) return LOG("bad args, need after");
+  if(!after) {
+    return lob_unshift(list, p);
+  }
 
   p->prev = after;
   p->next = after->next;

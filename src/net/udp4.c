@@ -5,6 +5,12 @@
 #include <unistd.h>
 #include "net_udp4.h"
 
+static int packet_loss_percent = 0;
+
+static long rand_in_range(const int start, const int end) {
+  return start + util_sys_random() / (RAND_MAX / (end - start + 1) + 1);
+}
+
 // individual pipe local info
 typedef struct pipe_udp4_struct
 {
@@ -80,7 +86,8 @@ pipe_t udp4_path(link_t link, lob_t path)
 
 net_udp4_t net_udp4_new(mesh_t mesh, lob_t options)
 {
-  int port, sock;
+  util_sys_random_init();
+  int port, sock, pkt_loss;
   unsigned int pipes;
   net_udp4_t net;
   struct sockaddr_in sa;
@@ -90,6 +97,10 @@ net_udp4_t net_udp4_new(mesh_t mesh, lob_t options)
   if(!port) port = mesh->port_local; // might be another in use
   pipes = lob_get_uint(options,"pipes");
   if(!pipes) pipes = 11; // hashtable for active pipes
+  pkt_loss = lob_get_uint(options, "pkt_loss");
+  if (pkt_loss) {
+    packet_loss_percent = pkt_loss;
+  }
 
   // create a udp socket
   if((sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP) ) < 0 ) return LOG("failed to create socket %s",strerror(errno));
@@ -163,6 +174,13 @@ net_udp4_t net_udp4_receive(net_udp4_t net)
   if(!packet)
   {
     LOG("parse error from %s on %d bytes",inet_ntoa(sa.sin_addr),len);
+    return net;
+  }
+
+  if (rand_in_range(0, 100) < packet_loss_percent) {
+    // DROP
+    printf("Drop packet\n");
+    lob_free(packet);
     return net;
   }
 

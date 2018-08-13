@@ -4,8 +4,6 @@
 #include <inttypes.h>
 #include "telehash.h"
 
-static void chan_process_ack(chan_t c, lob_t inner, uint32_t ack); // process an ack packet
-
 // open must be chan_receive or chan_send next yet
 chan_t chan_new(lob_t open)
 {
@@ -52,7 +50,7 @@ chan_t chan_free(chan_t c)
   lob_free(c->open);
   // free any other queued packets
   lob_freeall(c->in);
-  //lob_freeall(c->sent);
+  lob_freeall(c->sent);
   free(c->type);
   free(c);
   return NULL;
@@ -101,7 +99,8 @@ enum chan_states chan_state(chan_t c)
 // process into receiving queue
 chan_t chan_receive(chan_t c, lob_t inner)
 {
-  lob_t prev;
+  uint8_t used = 0;
+  lob_t prev, miss;
   uint32_t ack;
 
   if(!c || !inner) return LOG("bad args");
@@ -117,23 +116,41 @@ chan_t chan_receive(chan_t c, lob_t inner)
   inner->id = lob_get_uint(inner, "seq");
 
   // if there's an id, it's content
-  uint8_t inserted = 0;
   if(inner->id)
   {
     if(inner->id <= c->acked)
     {
-      LOG("dropping old seq %d",inner->id);
-      if((ack = lob_get_uint(inner, "ack")))
-      {
-        chan_process_ack(c, inner, ack);
-      }
+      LOG("dropping old seq %d (acked %d)",inner->id, c->acked);
       lob_free(inner);
       return NULL;
     }
 
     // insert it sorted
     prev = c->in;
-    while(prev && prev->id > inner->id) prev = prev->next;
+    do {
+      if (!prev) {
+        break;
+      }
+      if (prev->id == inner->id) {
+        // packet with same id = duplicate in list
+        break;
+      }
+      if (prev->id < inner->id) {
+        if (prev->next) {
+          if (prev->next->id > inner->id) {
+            // between two packets, one smaller and one larger than this
+            break;
+          }
+        } else {
+          // Smaller packet exists, larger does not
+          break;
+        }
+      }
+    } while ((prev = lob_next(prev)) && prev->id <= inner->id);
+    if (prev && prev->id > inner->id) {
+      // no previous packet
+      prev = NULL;
+    }
     if(prev && prev->id == inner->id)
     {
       LOG("dropping dup seq %d",inner->id);
@@ -141,42 +158,40 @@ chan_t chan_receive(chan_t c, lob_t inner)
       return NULL;
     }
     c->in = lob_insert(c->in, prev, inner);
-    inserted = 1;
-//    LOG("inserted seq %d",c->in?c->in->id:-1);
+    uint32_t before = inner->prev ? inner->prev->id : 0;
+    uint32_t after = inner->next ? inner->next->id : 0;
+    LOG("inserted seq (%d <-> [%d] <-> %d)", before, inner->id, after);
+    used = 1;
   }
 
   // remove any from sent cache that have been ack'd
   if((ack = lob_get_uint(inner, "ack")))
   {
-    chan_process_ack(c, inner, ack);
-    if (!inserted)
+    prev = c->sent;
+    while(prev && prev->id <= ack)
     {
-      lob_free(inner); // has not been used, get rid of
+      c->sent = lob_splice(c->sent, prev);
+      LOG("remove ack'd seq %d", prev->id);
+      lob_free(prev); // TODO, notify app this packet was ack'd
+      prev = c->sent;
+    }
+
+    // process array, update list of packets that are missed or not
+    if((miss = lob_get_json(inner, "miss")))
+    {
+      // set resend flag timestamp on them
+      // update window
+      LOG("TODO miss handling");
+      lob_free(miss);
     }
   }
 
-  return c;
-}
+  // free inner if we didn't use it for anything in the end
+  if (!used) {
+    lob_free(inner);
+  }
 
-static void chan_process_ack(chan_t c, lob_t inner, uint32_t ack) {
-// ignore acks
-//  lob_t prev, miss;
-//  prev = c->sent;
-//  while(prev && prev->id <= ack)
-//  {
-//    c->sent = lob_splice(c->sent, prev);
-//    lob_free(prev); // TODO, notify app this packet was ack'd
-//    prev = c->sent;
-//  }
-//
-//  // process array, update list of packets that are missed or not
-//  if((miss = lob_get_json(inner, "miss")))
-//  {
-//    // set resend flag timestamp on them
-//    // update window
-//    LOG("TODO miss handling");
-//    lob_free(miss);
-//  }
+  return c;
 }
 
 // false to force start timers (any new handshake), true to cancel and resend last packet (after any e3x_sync)
@@ -303,10 +318,9 @@ chan_t chan_send(chan_t c, lob_t inner)
 
   link_send(c->link, e3x_exchange_send(c->link->x, inner));
 
-  // BROKEN: if it's a content packet and reliable, add to sent list (push is dup safe since inner may be on it already)
-//  if(c->seq && inner->id) c->sent = lob_push(c->sent, inner);
-//  else lob_free(inner);
-  lob_free(inner);
+  // if it's a content packet and reliable, add to sent list (push is dup safe since inner may be on it already)
+  if(c->seq && inner->id) c->sent = lob_push(c->sent, inner);
+  else lob_free(inner);
 
   return c;
 }
@@ -350,8 +364,8 @@ chan_t chan_process(chan_t c, uint32_t now)
   // fire receiving handlers
   if(c->in && c->handle) c->handle(c, c->arg);
 
-  // BROKEN
-//  // check sent list for any flagged to resend
+  // check sent list for any flagged to resend
+  // IMONT: Does not work, sends duplicate packets.
 //  for(ret = c->sent; ret; ret = ret->next)
 //  {
 //    if(!ret->id) continue;
@@ -361,7 +375,7 @@ chan_t chan_process(chan_t c, uint32_t now)
 //    chan_send(c,ret);
 //  }
   
-  if(c->ack || c->acked) LOG("sending ack %d acked %d",c->ack,c->acked);
+  if(c->ack || c->acked) LOG("sending ack %d, acked %d, in %d",c->ack,c->acked, (c->in ? c->in->id : 0));
 
   // if we need to generate an ack/miss yet, do that
   if(c->ack != c->acked) chan_send(c,chan_oob(c));
@@ -392,13 +406,12 @@ uint32_t chan_size(chan_t c, uint32_t max)
     size += lob_len(cur);
     cur = cur->next;
   }
-// BROKEN
-//  cur = c->sent;
-//  while(cur)
-//  {
-//    size += lob_len(cur);
-//    cur = cur->next;
-//  }
+  cur = c->sent;
+  while(cur)
+  {
+    size += lob_len(cur);
+    cur = cur->next;
+  }
 
   return size;
 }
