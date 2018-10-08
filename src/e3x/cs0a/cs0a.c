@@ -65,7 +65,7 @@ static lob_t cs0_ephemeral_encrypt(cs0_ephemeral_t ephemeral, lob_t inner);
 static lob_t cs0_ephemeral_decrypt(cs0_ephemeral_t ephemeral, lob_t outer);
 
 
-static int RNG(uint8_t *p_dest, unsigned p_size)
+static int cs0_RNG(uint8_t *p_dest, unsigned p_size)
 {
   e3x_rand(p_dest,p_size);
   return 1;
@@ -86,7 +86,7 @@ e3x_cipher_t cs0a_init(lob_t options)
   ret->alg = "HS256 ES160";
 
   // normal init stuff
-  uECC_set_rng(&RNG);
+  uECC_set_rng(&cs0_RNG);
 
   // configure our callbacks (no RNG, default to platform's)
   ret->hash = cs0_cipher_hash;
