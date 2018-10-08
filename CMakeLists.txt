@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.5)
 
 add_definitions(
         -D_GNU_SOURCE
+        -DTH_USE_CS0A
 )
 
 set(LIB_INCLUDES
@@ -30,7 +31,7 @@ set(LIB_SOURCES
         src/lib/aes128.c
         src/lib/sha256.c
         src/lib/uECC.c)
-set(CIPHER_SOURCES src/e3x/cs1a/cs1a.c src/e3x/cs3a_disabled.c src/e3x/cs2a_disabled.c)
+set(CIPHER_SOURCES src/e3x/cs0a/cs0a.c src/e3x/cs0a_disabled.c src/e3x/cs1a/cs1a.c src/e3x/cs3a_disabled.c src/e3x/cs2a_disabled.c)
 set(E3X_SOURCES src/e3x/e3x.c src/e3x/self.c src/e3x/exchange.c src/e3x/cipher.c)
 set(MESH_SOURCES src/mesh.c src/link.c src/chan.c src/pipe.c src/util/uri.c)
 set(UTIL_SOURCES src/util/util.c src/util/chunks.c src/util/frames.c src/unix/util.c src/unix/util_sys.c)

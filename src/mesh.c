@@ -383,8 +383,7 @@ link_t mesh_receive_handshake(mesh_t mesh, lob_t handshake, pipe_t pipe)
       
     // get attached hashname
     lob_t tmp = lob_parse(handshake->body, handshake->body_len);
-    lob_t im = hashname_im(tmp, 0);
-    from = hashname_vkey(im, 0);
+    from = hashname_vkey(tmp, csid);
     if(!from)
     {
       LOG("bad link handshake, no hashname: %s",lob_json(handshake));

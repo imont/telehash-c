@@ -149,7 +149,7 @@ lob_t hashname_im(lob_t keys, uint8_t id)
   uint32_t i;
   size_t len;
   uint8_t *buf, hash[32];
-  char *key, *value, hex[3], temp[128];
+  char *key, *value, hex[3];
   lob_t im;
 
   if(!keys) return LOG("bad args");
@@ -162,15 +162,6 @@ lob_t hashname_im(lob_t keys, uint8_t id)
   {
     value = lob_get_index(keys,i+1);
     if(strlen(key) != 2 || !value) continue; // skip non-csid keys
-    if(strcmp(value, "true") == 0) {
-      // key is actually in the body
-      size_t encoded_len = base32_encode_length(keys->body_len);
-      if (encoded_len > 128) {
-          LOG("Given key too long, cannot process: %ul", encoded_len);
-      }
-      base32_encode(keys->body, keys->body_len, temp, encoded_len);
-      value = temp;
-    }
     len = base32_decode_floor(strlen(value));
     // save to body raw or as a base32 intermediate value
     if(id && util_cmp(hex,key) == 0)

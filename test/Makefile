@@ -5,7 +5,7 @@ TESTS = tmesh_core lib_base32 lib_lob lib_hashname lib_murmur lib_chunks lib_fra
 		ext_path net_serial chan_core chan_reliability net_bulk
 
 CC=gcc
-CFLAGS+=-g -Wall -Wextra -Wno-unused-parameter -DDEBUG -DRADIOS_MAX=2
+CFLAGS+=-g -Wall -Wextra -Wno-unused-parameter -DDEBUG -DRADIOS_MAX=2 -DTH_USE_CS0A
 INCLUDE+=-I../unix -I../include -I../include/lib
 
 
@@ -19,6 +19,8 @@ TMESH = src/tmesh/tmesh.c
 
 # CS1a by default
 CS = src/e3x/cs1a/cs1a.c 
+CS += src/e3x/cs0a/cs0a.c
+CS += src/e3x/cs0a_disabled.c
 TESTS += e3x_cs1a
 
 # check for CS2a deps

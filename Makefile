@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS+=-g -Wall -Wextra -Wno-unused-parameter -DDEBUG
+CFLAGS+=-g -Wall -Wextra -Wno-unused-parameter -DDEBUG -DTH_USE_CS0A
 #CFLAGS+=-Weverything -Wno-unused-macros -Wno-undef -Wno-gnu-zero-variadic-macro-arguments -Wno-padded -Wno-gnu-label-as-value -Wno-gnu-designator -Wno-missing-prototypes -Wno-format-nonliteral
 INCLUDE+=-Iinclude -Iinclude/lib -Iunix
 
@@ -13,6 +13,8 @@ TMESH = src/tmesh/tmesh.c
 
 # CS1a by default
 CS = src/e3x/cs1a/cs1a.c 
+CS += src/e3x/cs0a/cs0a.c
+CS += src/e3x/cs0a_disabled.c
 
 # check for CS2a deps
 ifneq ("$(wildcard node_modules/libtomcrypt-c/libtomcrypt.a)","")

@@ -130,9 +130,13 @@ int main(int argc, char ** argv) {
         net_tcp4_t net = net_tcp4_new(mesh, NULL);
         printf("Listening on port: %d\n", net->port);
         int port = atoi(getenv("PORT"));
-        char * key = getenv("CS1A_KEY");
+        char * key1a = getenv("CS1A_KEY");
+        char * key20 = getenv("CS20_KEY");
         lob_t remote_key = lob_new();
-        lob_set(remote_key, "1a", key);
+        lob_set(remote_key, "1a", key1a);
+        if (key20) {
+            lob_set(remote_key, "20", key20);
+        }
 
         lob_t path = lob_new();
         lob_set(path, "type", "tcp4");
