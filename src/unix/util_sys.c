@@ -1,5 +1,7 @@
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
 
+#ifndef TH_EXCLUDE_DEFAULT_UTIL_SYS
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -94,4 +96,6 @@ void *util_sys_log(uint8_t level, const char *file, int line, const char *functi
   return NULL;
 }
 
-#endif
+#endif // TH_EXCLUDE_UTIL_SYS
+
+#endif // !defined(_WIN32) ..
